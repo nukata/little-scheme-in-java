@@ -1,10 +1,10 @@
-// R01.06.08 by SUZUKI Hisao
+// R01.06.08/R01.07.15 by SUZUKI Hisao
 package little_scheme;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-/** Linked list of bindings which map symbols to values */
+/** Linked list of bindings mapping symbols to values */
 public class Env implements Iterable<Env> {
     public final Sym sym;
     public Object val;

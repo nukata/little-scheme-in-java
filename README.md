@@ -1,11 +1,13 @@
 # A Little Scheme in Java
 
 This is a small interpreter of a subset of Scheme
-in circa 900 lines of _Java 8_ (including a small arithmetic package
+in circa 900 lines of _Java 8 and 11_
+(including a small arithmetic package
 [`little_arith`](little_arith) in circa 100 lines).
 It implements the same language as
 [little-scheme-in-python](https://github.com/nukata/little-scheme-in-python),
-[little-scheme-in-go](https://github.com/nukata/little-scheme-in-go)
+[little-scheme-in-go](https://github.com/nukata/little-scheme-in-go),
+[little-scheme-in-cs](https://github.com/nukata/little-scheme-in-cs)
 and their meta-circular interpreter, 
 [little-scheme](https://github.com/nukata/little-scheme).
 
@@ -19,7 +21,8 @@ it optimizes _tail calls_ and handles _first-class continuations_ properly.
 $ make
 rm -f little_arith/*.class little_scheme/*.class
 javac -encoding utf-8 little_scheme/Main.java
-jar cfm little-scheme.jar Manifest little_arith/*.class little_scheme/*.class
+jar cfm little-scheme.jar Manifest LICENSE little_arith/*.class little_scheme/*.
+class
 $ java -jar little-scheme.jar
 > (+ 5 6)
 11
@@ -104,8 +107,56 @@ ot null? pair? eqv? eq? cons cdr car fibonacci)
 | continuations                       | `little_scheme.Continuation`        |
 
 
-The implementation is similar to that of
-[little-scheme-in-dart](https://github.com/nukata/little-scheme-in-dart).
+The implementation is similar to those of
+[little-scheme-in-dart](https://github.com/nukata/little-scheme-in-dart) and
+[little-scheme-in-cs](https://github.com/nukata/little-scheme-in-cs).
 
-For expression types and built-in procedures, see
-[little-scheme-in-python](https://github.com/nukata/little-scheme-in-python).
+
+### Expression types
+
+- _v_  [variable reference]
+
+- (_e0_ _e1_...)  [procedure call]
+
+- (`quote` _e_)  
+  `'`_e_ [transformed into (`quote` _e_) when read]
+
+- (`if` _e1_ _e2_ _e3_)  
+  (`if` _e1_ _e2_)
+
+- (`begin` _e_...)
+
+- (`lambda` (_v_...) _e_...)
+
+- (`set!` _v_ _e_)
+
+- (`define` _v_ _e_)
+
+For simplicity, this Scheme treats (`define` _v_ _e_) as an expression type.
+
+
+### Built-in procedures
+
+|                      |                       |                     |
+|:---------------------|:----------------------|:--------------------|
+| (`car` _lst_)        | (`not` _x_)           | (`eof-object?` _x_) |
+| (`cdr` _lst_)        | (`list` _x_ ...)      | (`symbol?` _x_)     |
+| (`cons` _x_ _y_)     | (`call/cc` _fun_)     | (`+` _x_ _y_)       |
+| (`eq?` _x_ _y_)      | (`apply` _fun_ _arg_) | (`-` _x_ _y_)       |
+| (`eqv?` _x_ _y_)     | (`display` _x_)       | (`*` _x_ _y_)       |
+| (`pair?` _x_)        | (`newline`)           | (`<` _x_ _y_)       |
+| (`null?` _x_)        | (`read`)              | (`=` _x_ _y_)       |
+|                      |                       | (`globals`)         |
+
+`(globals)` returns a list of keys of the global environment.
+It is not in the standard.
+
+See [`GLOBAL_ENV`](little_scheme/LS.java#L95-L159)
+in `little_scheme.LS` for the implementation of the procedures
+except `call/cc` and `apply`.  
+`call/cc` and `apply` are implemented particularly at 
+[`applyFunction`](little_scheme/Eval.java#L151-L189) in `little_scheme.Eval`.
+
+I hope this serves as a popular model of how to write a Scheme interpreter
+in Java 8 and later.
+

@@ -1,8 +1,17 @@
-// R01.06.08 by SUZUKI Hisao
+// R01.06.08/R01.07.15 by SUZUKI Hisao
 package little_scheme;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Queue;
 import little_arith.Arith;
 
 /** Little Scheme's common values and functions */
@@ -46,20 +55,15 @@ public class LS {
             List<String> ss = new ArrayList<>();
             for (Env env: (Env) exp) {
                 if (env == GLOBAL_ENV) {
-                    ss.add("GloblEnv");
+                    ss.add("GlobalEnv");
                     break;
-                } else if (env.sym == null) { // marker of the frame top
+                } else if (env.sym == null) { // frame marker
                     ss.add("|");
                 } else {
                     ss.add(env.sym.toString());
                 }
             }
             return "#<" + String.join(" ", ss) + ">";
-        } else if (exp instanceof Continuation) {
-            List<String> ss = new ArrayList<>();
-            for (Step step: (Continuation) exp)
-                ss.add(step.op + " " + stringify(step.val));
-            return "#<" + String.join("\n\t ", ss) + ">";
         } else if (exp instanceof Closure) {
             Closure f = (Closure) exp;
             return "#<" + stringify(f.params) +
@@ -76,7 +80,7 @@ public class LS {
     /** Return a list of symbols of the global environment. */
     private static Cell globals() {
         Cell j = null;
-        Env env = GLOBAL_ENV.next; // Skip the marker.
+        Env env = GLOBAL_ENV.next; // Skip the frame marker.
         for (Env e: env)
             j = new Cell(e.sym, j);
         return j;
@@ -88,7 +92,7 @@ public class LS {
                                next);
     }
 
-    private static Env g1 =
+    private static Env G1 =
         c("+", 2,
           x -> Arith.add((Number) x.car,
                          (Number) ((Cell) x.cdr).car),
@@ -116,7 +120,7 @@ public class LS {
     /** Scheme's global environment  */
     public static final Env GLOBAL_ENV = 
         new Env
-        (null,                  // marker of the frame top
+        (null,                  // frame marker
          null,
          c("car", 1, x -> ((Cell) x.car).car,
            c("cdr", 1, x -> ((Cell) x.car).cdr,
@@ -149,8 +153,148 @@ public class LS {
                                    System.out.println();
                                    return NONE;
                                },
-                               c("read", 0, x -> Read.readExpression("", ""),
+                               c("read", 0, x -> readExpression("", ""),
                                  c("eof-object?", 1, x -> x.car == EOF,
                                    c("symbol?", 1, x -> x.car instanceof Sym,
-                                     g1)))))))))))))));
+                                     G1)))))))))))))));
+
+    //----------------------------------------------------------------------
+
+    /** Split a string into a list of tokens.
+        For "(a 1)" it returns ["(", "a", "1", ")"].
+     */
+    public static Queue<String> splitStringIntoTokens(String source) {
+        Queue<String> result = new ArrayDeque<>();
+        for (String line: source.split("\n")) {
+            Queue<String> ss = new ArrayDeque<>(); // to store string literals
+            List<String> x = new ArrayList<>();
+            int i = 0;
+            for (String e: line.split("\"")) {
+                if (i % 2 == 0) {
+                    x.add(e); 
+                } else {
+                    ss.add("\"" + e); // Store a string literal.
+                    x.add("#s");
+                }
+                i++;
+            }
+            String s = String.join(" ", x).split(";")[0]; // Ignore ;-comment.
+            s = s.replaceAll("'", " ' ");
+            s = s.replaceAll("\\)", " ) ");
+            s = s.replaceAll("\\(", " ( ");
+            for (String e: s.split("\\s+")) 
+                if (e.equals("#s"))
+                    result.add(ss.remove());
+                else if (! e.isEmpty())
+                    result.add(e);
+        }
+        return result;
+    }
+
+    /** Read an expression from tokens.
+        Tokens will be left with the rest of token strings, if any.
+    */
+    public static Object readFromTokens(Queue<String> tokens) {
+        String token = tokens.remove();
+        switch (token) {
+        case "(": {
+            Cell z = new Cell(null, null);
+            Cell y = z;
+            while (! tokens.element().equals(")")) {
+                if (tokens.element().equals(".")) {
+                    tokens.remove();
+                    y.cdr = readFromTokens(tokens);
+                    if (! tokens.element().equals(")"))
+                        throw new RuntimeException(") is expected");
+                    break;
+                }
+                Object e = readFromTokens(tokens);
+                Cell x = new Cell(e, null);
+                y.cdr = x;
+                y = x;
+            }
+            tokens.remove();
+            return z.cdr;
+        }
+        case ")":
+            throw new RuntimeException("unexpected )");
+        case "'": {
+            Object e = readFromTokens(tokens);
+            return new Cell(Sym.QUOTE, new Cell(e, null)); // (quote e)
+        }
+        case "#f":
+            return Boolean.FALSE;
+        case "#t":
+            return Boolean.TRUE;
+        }
+        if (token.charAt(0) == '"')
+            return token.substring(1);
+        try {
+            return Arith.parse(token);
+        } catch (NumberFormatException ex) {}
+        return Sym.of(token);
+    }
+
+    //----------------------------------------------------------------------
+
+    /** Tokens from the standard-in */
+    private static Queue<String> stdInTokens = new ArrayDeque<>();
+
+    /** A buffered reader for the standard-in */
+    private static final BufferedReader STDIN = 
+        new BufferedReader(new InputStreamReader(System.in));
+
+    /** Read an expression from the standard-in. */
+    public static Object readExpression(String prompt1, String prompt2)
+        throws IOException
+    {
+        for (;;) {
+            Queue<String> old = new ArrayDeque<>(stdInTokens);
+            try {
+                return readFromTokens(stdInTokens);
+            } catch (NoSuchElementException ex) {
+                System.out.print(old.isEmpty() ? prompt1 : prompt2);
+                System.out.flush();
+                String line = STDIN.readLine();
+                if (line == null) // EOF
+                    return EOF;
+                stdInTokens = old;
+                stdInTokens.addAll(splitStringIntoTokens(line));
+            } catch (Exception ex) {
+                stdInTokens.clear(); // Discard the erroneous tokens.
+                throw ex;
+            }
+        }
+    }
+
+    //----------------------------------------------------------------------
+
+    /** Repeat Read-Eval-Print until End-Of-File. */
+    public static void readEvalPrintLoop() throws IOException {
+        for (;;) {
+            try {
+                Object exp = readExpression("> ", "| ");
+                if (exp == EOF) {
+                    System.out.println("Goodbye");
+                    return;
+                }
+                Object result = new Eval(exp, GLOBAL_ENV).evaluate();
+                if (result != NONE)
+                    System.out.println(stringify(result));
+            } catch (RuntimeException ex) {
+                System.out.println(ex.getMessage());
+            }
+        }
+    }
+
+    /** Load a source code from a file. */
+    public static void load(String fileName) throws IOException {
+        String source = new String(Files.readAllBytes(Paths.get(fileName)),
+                                   StandardCharsets.UTF_8);
+        Queue<String> tokens = splitStringIntoTokens(source);
+        while (! tokens.isEmpty()) {
+            Object exp = readFromTokens(tokens);
+            new Eval(exp, GLOBAL_ENV).evaluate();
+        }
+    }
 }

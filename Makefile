@@ -1,7 +1,7 @@
 all:
 	rm -f little_arith/*.class little_scheme/*.class
 	javac -encoding utf-8 little_scheme/Main.java
-	jar cfm little-scheme.jar Manifest little_arith/*.class little_scheme/*.class
+	jar cfm little-scheme.jar Manifest LICENSE little_arith/*.class little_scheme/*.class
 
 clean:
 	rm -f little_arith/*.class little_scheme/*.class

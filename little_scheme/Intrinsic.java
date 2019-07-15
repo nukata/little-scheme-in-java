@@ -1,4 +1,4 @@
-// R01.06.08 by SUZUKI Hisao
+// R01.06.08/R01.07.15 by SUZUKI Hisao
 package little_scheme;
 
 import java.io.IOException;
@@ -19,7 +19,8 @@ public class Intrinsic {
         return "#<" + name + ":" + arity + ">";
     }
 
-    public static interface Body {
+    /** Body of a built-in function */
+    @FunctionalInterface public static interface Body {
         Object call(Cell args) throws IOException;
     }
 }
