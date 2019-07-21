@@ -1,4 +1,4 @@
-// R01.06.08/R01.07.15 by SUZUKI Hisao
+// R01.06.08/R01.07.21 by SUZUKI Hisao
 package little_scheme;
 
 import java.io.IOException;
@@ -140,6 +140,8 @@ public class Eval {
                     }
                 }
             }
+        } catch (ErrorException ex) {
+            throw ex;
         } catch (Exception ex) {
             if (k.isEmpty())
                 throw ex;

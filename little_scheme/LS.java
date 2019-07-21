@@ -1,4 +1,4 @@
-// R01.06.08/R01.07.15 by SUZUKI Hisao
+// R01.06.08/R01.07.21 by SUZUKI Hisao
 package little_scheme;
 
 import java.io.BufferedReader;
@@ -108,14 +108,19 @@ public class LS {
                 c("=", 2,
                   x -> Arith.compare((Number) x.car,
                                      (Number) ((Cell) x.cdr).car) == 0,
-                  c("globals", 0, x -> globals(),
-                    new Env
-                    (Sym.CALLCC,
-                     Sym.CALLCC,
-                     new Env
-                     (Sym.APPLY,
-                      Sym.APPLY,
-                      null))))))));
+                  c("error", 2,
+                    x -> {
+                        throw new ErrorException(x.car,
+                                                 ((Cell) x.cdr).car);
+                    },
+                    c("globals", 0, x -> globals(),
+                      new Env
+                      (Sym.CALLCC,
+                       Sym.CALLCC,
+                       new Env
+                       (Sym.APPLY,
+                        Sym.APPLY,
+                        null)))))))));
 
     /** Scheme's global environment  */
     public static final Env GLOBAL_ENV = 

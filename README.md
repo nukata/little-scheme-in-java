@@ -5,9 +5,11 @@ in circa 900 lines of _Java 8 and 11_
 (including a small arithmetic package
 [`little_arith`](little_arith) in circa 100 lines).
 It implements the same language as
-[little-scheme-in-python](https://github.com/nukata/little-scheme-in-python),
-[little-scheme-in-go](https://github.com/nukata/little-scheme-in-go),
-[little-scheme-in-cs](https://github.com/nukata/little-scheme-in-cs)
+
+- [little-scheme-in-python](https://github.com/nukata/little-scheme-in-python)
+- [little-scheme-in-go](https://github.com/nukata/little-scheme-in-go)
+- [little-scheme-in-cs](https://github.com/nukata/little-scheme-in-cs)
+
 and their meta-circular interpreter, 
 [little-scheme](https://github.com/nukata/little-scheme).
 
@@ -46,7 +48,9 @@ $
 
 You can run it with a Scheme script.
 Examples are found in 
-[little-scheme](https://github.com/nukata/little-scheme).
+[little-scheme](https://github.com/nukata/little-scheme);
+download it at `..` and you can try the following:
+
 
 ```
 $ java -jar little-scheme.jar ../little-scheme/examples/yin-yang-puzzle.scm |
@@ -62,13 +66,13 @@ $ java -jar little-scheme.jar ../little-scheme/examples/yin-yang-puzzle.scm |
 ********
 *********
 ^C$
-$ time java -jar little-scheme.jaro ../little-scheme/scm.scm \
+$ java -jar little-scheme.jar ../little-scheme/examples/amb.scm
+((1 A) (1 B) (1 C) (2 A) (2 B) (2 C) (3 A) (3 B) (3 C))
+$ java -jar little-scheme.jar ../little-scheme/examples/nqueens.scm
+((5 3 1 6 4 2) (4 1 5 2 6 3) (3 6 2 5 1 4) (2 4 6 1 3 5))
+$ java -jar little-scheme.jar ../little-scheme/scm.scm \
 > < ../little-scheme/examples/nqueens.scm 
 ((5 3 1 6 4 2) (4 1 5 2 6 3) (3 6 2 5 1 4) (2 4 6 1 3 5))
-
-real	0m1.660s
-user	0m1.819s
-sys	0m0.223s
 $ 
 ```
 
@@ -81,8 +85,10 @@ after running the script.
 $ java -jar little-scheme.jar ../little-scheme/examples/fib90.scm -
 2880067194370816120
 > (globals)
-(apply call/cc globals = < * - + symbol? eof-object? read newline display list n
-ot null? pair? eqv? eq? cons cdr car fibonacci)
+(apply call/cc globals error = < * - + symbol? eof-object? read newline display 
+list not null? pair? eqv? eq? cons cdr car fibonacci)
+> (fibonacci 16)
+987
 > (fibonacci 1000)
 43466557686937456435688527675040625802564660517371780402481729089536555417949051
 89040387984007925516929592259308032263477520968962323987332247116164299644090653
@@ -137,26 +143,29 @@ For simplicity, this Scheme treats (`define` _v_ _e_) as an expression type.
 
 ### Built-in procedures
 
-|                      |                       |                     |
-|:---------------------|:----------------------|:--------------------|
-| (`car` _lst_)        | (`not` _x_)           | (`eof-object?` _x_) |
-| (`cdr` _lst_)        | (`list` _x_ ...)      | (`symbol?` _x_)     |
-| (`cons` _x_ _y_)     | (`call/cc` _fun_)     | (`+` _x_ _y_)       |
-| (`eq?` _x_ _y_)      | (`apply` _fun_ _arg_) | (`-` _x_ _y_)       |
-| (`eqv?` _x_ _y_)     | (`display` _x_)       | (`*` _x_ _y_)       |
-| (`pair?` _x_)        | (`newline`)           | (`<` _x_ _y_)       |
-| (`null?` _x_)        | (`read`)              | (`=` _x_ _y_)       |
-|                      |                       | (`globals`)         |
+|                      |                          |                     |
+|:---------------------|:-------------------------|:--------------------|
+| (`car` _lst_)        | (`not` _x_)              | (`eof-object?` _x_) |
+| (`cdr` _lst_)        | (`list` _x_ ...)         | (`symbol?` _x_)     |
+| (`cons` _x_ _y_)     | (`call/cc` _fun_)        | (`+` _x_ _y_)       |
+| (`eq?` _x_ _y_)      | (`apply` _fun_ _arg_)    | (`-` _x_ _y_)       |
+| (`eqv?` _x_ _y_)     | (`display` _x_)          | (`*` _x_ _y_)       |
+| (`pair?` _x_)        | (`newline`)              | (`<` _x_ _y_)       |
+| (`null?` _x_)        | (`read`)                 | (`=` _x_ _y_)       |
+|                      | (`error` _reason_ _arg_) | (`globals`)         |
 
-`(globals)` returns a list of keys of the global environment.
-It is not in the standard.
+- `(error` _reason_ _arg_`)` throws an exception with the message
+  "`Error:` _reason_`:` _arg_".
+  It is based on [SRFI-23](https://srfi.schemers.org/srfi-23/srfi-23.html).
 
-See [`GLOBAL_ENV`](little_scheme/LS.java#L95-L159)
+- `(globals)` returns a list of keys of the global environment.
+  It is not in the standard.
+
+See [`GLOBAL_ENV`](little_scheme/LS.java#L95-L164)
 in `little_scheme.LS` for the implementation of the procedures
 except `call/cc` and `apply`.  
 `call/cc` and `apply` are implemented particularly at 
-[`applyFunction`](little_scheme/Eval.java#L151-L189) in `little_scheme.Eval`.
+[`applyFunction`](little_scheme/Eval.java#L153-L191) in `little_scheme.Eval`.
 
-I hope this serves as a popular model of how to write a Scheme interpreter
-in Java 8 and later.
-
+I hope this serves as a model of how to write a Scheme interpreter in Java 8
+and later.
