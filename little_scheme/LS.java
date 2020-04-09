@@ -1,4 +1,4 @@
-// R01.06.08/R01.07.21 by SUZUKI Hisao
+// R01.06.08/R02.04.09 by SUZUKI Hisao
 package little_scheme;
 
 import java.io.BufferedReader;
@@ -24,6 +24,12 @@ public class LS {
     /** A unique value which means the End Of File */
     public static final Object EOF = new Object();
 
+    /** A unique value which represents the call/cc procedure */
+    public static final Object CALLCC_VAL = new Object();
+
+    /** A unique value which represents the apply procedure */
+    public static final Object APPLY_VAL = new Object();
+
     /** Convert an expression to a string (with quotes). */
     public static String stringify(Object exp) {
         return stringify(exp, true);
@@ -39,6 +45,10 @@ public class LS {
             return "#<VOID>";
         } else if (exp == EOF) {
             return "#<EOF>";
+        } else if (exp == CALLCC_VAL) {
+            return "#<call/cc>";
+        } else if (exp == APPLY_VAL) {
+            return "#<apply>";            
         } else if (exp == null) {
             return "()";
         } else if (exp  instanceof Cell) {
@@ -87,9 +97,8 @@ public class LS {
     }
 
     private static Env c(String name, int arity, Intrinsic.Body fun,
-                                 Env next) {
-        return new Env(Sym.of(name), new Intrinsic(name, arity, fun),
-                               next);
+                         Env next) {
+        return new Env(Sym.of(name), new Intrinsic(name, arity, fun), next);
     }
 
     private static Env G1 =
@@ -108,19 +117,13 @@ public class LS {
                 c("=", 2,
                   x -> Arith.compare((Number) x.car,
                                      (Number) ((Cell) x.cdr).car) == 0,
-                  c("error", 2,
-                    x -> {
-                        throw new ErrorException(x.car,
-                                                 ((Cell) x.cdr).car);
-                    },
-                    c("globals", 0, x -> globals(),
-                      new Env
-                      (Sym.CALLCC,
-                       Sym.CALLCC,
-                       new Env
-                       (Sym.APPLY,
-                        Sym.APPLY,
-                        null)))))))));
+                  c("number?", 1, x -> x.car instanceof Number,
+                    c("error", 2,
+                      x -> {
+                          throw new ErrorException(x.car, ((Cell) x.cdr).car);
+                      },
+                      c("globals", 0, x -> globals(),
+                        null))))))));
 
     /** Scheme's global environment  */
     public static final Env GLOBAL_ENV = 
@@ -131,37 +134,28 @@ public class LS {
            c("cdr", 1, x -> ((Cell) x.car).cdr,
              c("cons", 2, x -> new Cell(x.car, ((Cell) x.cdr).car),
                c("eq?", 2, x -> x.car == ((Cell) x.cdr).car,
-                 c("eqv?", 2, 
-                   x -> {
-                       Object a = x.car;
-                       Object b = ((Cell) x.cdr).car;
-                       if (a == b) {
-                           return true;
-                       } else if (a instanceof Number && b instanceof Number) {
-                           int c = Arith.compare((Number) a, (Number) b);
-                           return c == 0;
-                       } else {
-                           return false;
-                       }
-                   },
-                   c("pair?", 1, x -> x.car instanceof Cell,
-                     c("null?", 1, x -> x.car == null,
-                       c("not", 1, x -> x.car == Boolean.FALSE,
-                         c("list", -1, x -> x,
-                           c("display", 1,
+                 c("pair?", 1, x -> x.car instanceof Cell,
+                   c("null?", 1, x -> x.car == null,
+                     c("not", 1, x -> x.car == Boolean.FALSE,
+                       c("list", -1, x -> x,
+                         c("display", 1,
+                           x -> {
+                               System.out.print(stringify(x.car, false));
+                               return NONE;
+                           },
+                           c("newline", 0,
                              x -> {
-                                 System.out.print(stringify(x.car, false));
+                                 System.out.println();
                                  return NONE;
                              },
-                             c("newline", 0,
-                               x -> {
-                                   System.out.println();
-                                   return NONE;
-                               },
-                               c("read", 0, x -> readExpression("", ""),
-                                 c("eof-object?", 1, x -> x.car == EOF,
-                                   c("symbol?", 1, x -> x.car instanceof Sym,
-                                     G1)))))))))))))));
+                             c("read", 0, x -> readExpression("", ""),
+                               c("eof-object?", 1, x -> x.car == EOF,
+                                 c("symbol?", 1, x -> x.car instanceof Sym,
+                                   new Env(Sym.CALLCC,
+                                           CALLCC_VAL,
+                                           new Env(Sym.APPLY,
+                                                   APPLY_VAL,
+                                                   G1))))))))))))))));
 
     //----------------------------------------------------------------------
 

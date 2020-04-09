@@ -4,11 +4,18 @@ This is a small interpreter of a subset of Scheme
 in circa 900 lines of _Java 8 and 11_
 (including a small arithmetic package
 [`little_arith`](little_arith) in circa 100 lines).
-It implements the same language as
+It implements almost the same language as
 
-- [little-scheme-in-python](https://github.com/nukata/little-scheme-in-python)
-- [little-scheme-in-go](https://github.com/nukata/little-scheme-in-go)
+- [little-scheme-in-crystal](https://github.com/nukata/little-scheme-in-crystal)
 - [little-scheme-in-cs](https://github.com/nukata/little-scheme-in-cs)
+- [little-scheme-in-dart](https://github.com/nukata/little-scheme-in-dart)
+- [little-scheme-in-go](https://github.com/nukata/little-scheme-in-go)
+- [little-scheme-in-kotlin](https://github.com/nukata/little-scheme-in-kotlin)
+- [little-scheme-in-lisp](https://github.com/nukata/little-scheme-in-lisp)
+- [little-scheme-in-php](https://github.com/nukata/little-scheme-in-php)
+- [little-scheme-in-python](https://github.com/nukata/little-scheme-in-python)
+- [little-scheme-in-ruby](https://github.com/nukata/little-scheme-in-ruby)
+- [little-scheme-in-typescript](https://github.com/nukata/little-scheme-in-typescript)
 
 and their meta-circular interpreter, 
 [little-scheme](https://github.com/nukata/little-scheme).
@@ -85,8 +92,8 @@ after running the script.
 $ java -jar little-scheme.jar ../little-scheme/examples/fib90.scm -
 2880067194370816120
 > (globals)
-(apply call/cc globals error = < * - + symbol? eof-object? read newline display 
-list not null? pair? eqv? eq? cons cdr car fibonacci)
+(globals error number? = < * - + apply call/cc symbol? eof-object? read newline
+display list not null? pair? eq? cons cdr car fibonacci)
 > (fibonacci 16)
 987
 > (fibonacci 1000)
@@ -143,16 +150,17 @@ For simplicity, this Scheme treats (`define` _v_ _e_) as an expression type.
 
 ### Built-in procedures
 
-|                      |                          |                     |
-|:---------------------|:-------------------------|:--------------------|
-| (`car` _lst_)        | (`not` _x_)              | (`eof-object?` _x_) |
-| (`cdr` _lst_)        | (`list` _x_ ...)         | (`symbol?` _x_)     |
-| (`cons` _x_ _y_)     | (`call/cc` _fun_)        | (`+` _x_ _y_)       |
-| (`eq?` _x_ _y_)      | (`apply` _fun_ _arg_)    | (`-` _x_ _y_)       |
-| (`eqv?` _x_ _y_)     | (`display` _x_)          | (`*` _x_ _y_)       |
-| (`pair?` _x_)        | (`newline`)              | (`<` _x_ _y_)       |
-| (`null?` _x_)        | (`read`)                 | (`=` _x_ _y_)       |
-|                      | (`error` _reason_ _arg_) | (`globals`)         |
+|                   |                          |                 |
+|:------------------|:-------------------------|:----------------|
+| (`car` _lst_)     | (`display` _x_)          | (`+` _n1_ _n2_) |
+| (`cdr` _lst_)     | (`newline`)              | (`-` _n1_ _n2_) |
+| (`cons` _x_ _y_)  | (`read`)                 | (`*` _n1_ _n2_) |
+| (`eq?` _x_ _y_)   | (`eof-object?` _x_)      | (`<` _n1_ _n2_) |
+| (`pair?` _x_)     | (`symbol?` _x_)          | (`=` _n1_ _n2_) |
+| (`null?` _x_)     | (`call/cc` _fun_)        | (`number?` _x_) |
+| (`not` _x_)       | (`apply` _fun_ _arg_)    | (`globals`)     |
+| (`list` _x_ ...)  | (`error` _reason_ _arg_) |                 |
+
 
 - `(error` _reason_ _arg_`)` throws an exception with the message
   "`Error:` _reason_`:` _arg_".
@@ -161,7 +169,7 @@ For simplicity, this Scheme treats (`define` _v_ _e_) as an expression type.
 - `(globals)` returns a list of keys of the global environment.
   It is not in the standard.
 
-See [`GLOBAL_ENV`](little_scheme/LS.java#L95-L164)
+See [`GLOBAL_ENV`](little_scheme/LS.java#L104-L158)
 in `little_scheme.LS` for the implementation of the procedures
 except `call/cc` and `apply`.  
 `call/cc` and `apply` are implemented particularly at 

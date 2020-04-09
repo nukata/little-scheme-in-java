@@ -1,4 +1,4 @@
-// R01.06.08/R01.07.21 by SUZUKI Hisao
+// R01.06.08/R02.04.09 by SUZUKI Hisao
 package little_scheme;
 
 import java.io.IOException;
@@ -153,12 +153,12 @@ public class Eval {
     /** Apply a function to arguments with a continuation. */
     private void applyFunction(Object fun, Cell arg) throws IOException {
         for (;;) {
-            if (fun == Sym.CALLCC) {
+            if (fun == LS.CALLCC_VAL) {
                 k.pushRestoreEnv(env);
                 fun = arg.car;
                 Continuation cont = new Continuation(k);
                 arg = new Cell(cont, null);
-            } else if (fun == Sym.APPLY) {
+            } else if (fun == LS.APPLY_VAL) {
                 fun = arg.car;
                 arg = (Cell) ((Cell) arg.cdr).car;
             } else {
